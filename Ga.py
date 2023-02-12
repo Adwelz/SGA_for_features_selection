@@ -344,16 +344,19 @@ class Ga:
             - number_of_parents: The number of parents selected
         
         Returns:
-            The next population
+            All generations and the entropy
         """
         number_of_parents = int(number_of_individuals*self.crossover_rate)
         entropy = []
+        populations=[]
         population=initiate_population(number_of_individuals,bitstring_length)
+        populations.append(population)
         entropy.append(population_entropy(population))
 
         for _ in range(number_of_cycle):
             population = self.one_cycle(population, number_of_individuals,number_of_parents)
+            populations.append(population)
             entropy.append(population_entropy(population))
         
-        return population,entropy
+        return populations,entropy
 
