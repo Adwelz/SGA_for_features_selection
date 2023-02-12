@@ -42,7 +42,7 @@ def fitness_for_data_case(bitstring):
     bitstring = np.array(bitstring)
 
     x_filtered=lR.get_columns(X,bitstring)
-    return lR.get_fitness(x_filtered, Y)
+    return 1/lR.get_fitness(x_filtered, Y,4)
 
 def initiate_population(n,bitstring_lentgh):
     """Initiate the population
@@ -75,9 +75,12 @@ def trivial_selection(population,n,fitness_fonction):
     F=np.array(F)
     F=F[F[:, 1].argsort()[::-1]]
     F=F[:n,:]
+    R=F[n:,:]
     F=F[:,0]
+    R=R[:,0]
     F=F.astype(int)
-    return population[F]
+    R=R.astype(int)
+    return population[F],population[R]
 
 def trivial_compete(i1,i2,fitness_fonction):
     """Compete between two individual
@@ -121,7 +124,7 @@ def random_crossover(p1,p2):
             c2.append(p1[i])
     return c1,c2
 
-def normal_mutation(c):
+def normal_mutation(c,probability):
     """Mutation of an individual
 
     Args:
@@ -133,7 +136,7 @@ def normal_mutation(c):
     """
     mutate_c=c
 
-    if random.randint(0,1)==1:
+    if random.random() < probability:
         i=random.randint(0,len(c)-1)
         if mutate_c[i]==0:
             mutate_c[i]=1
@@ -143,10 +146,11 @@ def normal_mutation(c):
     return mutate_c
 
 class Ga:
-    def __init__(self,crossover_type,crossover_rate,mutation_type,selection_type,fitness_fonction,crowding_option=False, 
+    def __init__(self,crossover_type,crossover_rate,mutation_type,mutate_rate,selection_type,fitness_fonction,crowding_option=False, 
                 compete_type='none',interval='none',penalty_rate='0') -> None:
         
         self.crossover_rate = float(crossover_rate)
+        self.mutate_rate = float(mutate_rate)
         self.crowding_option = crowding_option
 
         if interval !='none':
@@ -192,8 +196,8 @@ class Ga:
         """
         c1,c2=self.crossover(p1,p2)
 
-        c1 = self.mutation(c1)
-        c2 = self.mutation(c2)
+        c1 = self.mutation(c1,self.mutate_rate)
+        c2 = self.mutation(c2,self.mutate_rate)
 
         if self.crowding_option == True:
 
@@ -216,13 +220,16 @@ class Ga:
 
     def one_cycle(self, population, number_of_individuals, number_of_parents):
         childs=[]
-        parents=self.selection(population,number_of_parents,self.fitness_function)
+        parents,pop_without_parent=self.selection(population,number_of_parents,self.fitness_function)
+        if self.crowding_option == True:
+            population = pop_without_parent
         for k in range(0,number_of_parents,2):
             c1,c2=self.one_cycle_function(parents[k],parents[k+1])
             childs.append(c1)
             childs.append(c2)
         population= np.append(population,np.array(childs),axis=0)
-        population=self.selection(population,number_of_individuals,self.fitness_function)
+        if self.crowding_option == False:
+            population,_=self.selection(population,number_of_individuals,self.fitness_function)
 
         return population
 
